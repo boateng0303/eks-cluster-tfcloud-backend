@@ -49,7 +49,7 @@ jobs:
       - name: Set Environment Variables
         run: |
           echo "Selected environment: ${{ github.event.inputs.env }}"
-          ENV_FILE="terraform/${{ github.event.inputs.env }}.tfvars"
+          ENV_FILE="${{ github.event.inputs.env }}.tfvars"
           echo "ENV_FILE=$ENV_FILE" >> $GITHUB_ENV
 
       # 5️⃣ Terraform Lint (terraform fmt & validate)
@@ -68,11 +68,13 @@ jobs:
 
       # 8️⃣ Initialize Terraform
       - name: Terraform Init
+        working-directory: terraform
         run: terraform init -backend-config="workspaces.name=${{ github.event.inputs.env }}"
 
     
       # 🔟 Terraform Plan (Uploads to TFC)
       - name: Terraform Plan
+        working-directory: terraform
         run: terraform plan -var-file="$ENV_FILE" -out=tfplan
 
       # 1️⃣1️⃣ Show Plan in JSON (Optional)
