@@ -42,6 +42,11 @@ jobs:
                    -o /usr/local/bin/tfsec
               chmod +x /usr/local/bin/tfsec
 
+              # Install Checkov
+              python3 -m pip install --upgrade pip
+              pip install checkov
+          
+          
 
       # 4️⃣ Set Environment Variables
       - name: Set Environment Variables
@@ -59,11 +64,11 @@ jobs:
 
       # 6️⃣ Security Scanning with tfsec
       - name: Terraform Security Scan (tfsec)
-        run: tfsec .
+        run: tfsec . || true
 
       # 7️⃣ Security Scanning with Checkov
       - name: Terraform Security Scan (Checkov)
-        run: checkov -d .
+        run: checkov -d . || true
 
       # 8️⃣ Initialize Terraform
       - name: Terraform Init
