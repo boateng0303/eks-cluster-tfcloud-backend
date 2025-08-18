@@ -49,7 +49,7 @@ jobs:
       - name: Set Environment Variables
         run: |
           echo "Selected environment: ${{ github.event.inputs.env }}"
-          ENV_FILE="${{ github.event.inputs.env }}.tfvars"
+          ENV_FILE="terraform/${{ github.event.inputs.env }}.tfvars"
           echo "ENV_FILE=$ENV_FILE" >> $GITHUB_ENV
 
       # 5️⃣ Terraform Lint (terraform fmt & validate)
