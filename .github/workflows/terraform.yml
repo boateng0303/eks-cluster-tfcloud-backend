@@ -68,7 +68,7 @@ jobs:
 
       # 8️⃣ Initialize Terraform
       - name: Terraform Init
-        run: terraform init -backend-config="workspaces.name=${{ github.event.inputs.env }}"
+        run: terraform init 
 
     
       # 🔟 Terraform Plan (Uploads to TFC)
