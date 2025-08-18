@@ -68,7 +68,6 @@ jobs:
 
       # 8️⃣ Initialize Terraform
       - name: Terraform Init
-        working-directory: terraform
         run: terraform init -backend-config="workspaces.name=${{ github.event.inputs.env }}"
 
     
