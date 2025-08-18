@@ -68,6 +68,7 @@ jobs:
 
       # 8️⃣ Initialize Terraform
       - name: Terraform Init
+        working-directory: terraform
         run: terraform init 
 
     
