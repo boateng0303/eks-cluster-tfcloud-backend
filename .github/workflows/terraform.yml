@@ -1,0 +1,87 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      env:
+        description: 'Select environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      TF_API_TOKEN: ${{ secrets.TFC_TOKEN }}
+
+    steps:
+      # 1️⃣ Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      # 3️⃣ Install TFSEC & Checkov
+      - name: Install TFSEC & Checkov
+        run: |
+          curl -s https://tfsec.dev/install.sh | bash
+          pip install --upgrade pip
+          pip install checkov
+
+      # 4️⃣ Set Environment Variables
+      - name: Set Environment Variables
+        run: |
+          echo "Selected environment: ${{ github.event.inputs.env }}"
+          echo "TF_WORKSPACE=${{ github.event.inputs.env }}" >> $GITHUB_ENV
+          ENV_FILE="${{ github.event.inputs.env }}.tfvars"
+          echo "ENV_FILE=$ENV_FILE" >> $GITHUB_ENV
+
+      # 5️⃣ Terraform Lint (terraform fmt & validate)
+      - name: Terraform Lint
+        run: |
+          terraform fmt -check
+          terraform validate
+
+      # 6️⃣ Security Scanning with tfsec
+      - name: Terraform Security Scan (tfsec)
+        run: tfsec .
+
+      # 7️⃣ Security Scanning with Checkov
+      - name: Terraform Security Scan (Checkov)
+        run: checkov -d .
+
+      # 8️⃣ Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+
+      # 9️⃣ Select or Create Terraform Workspace
+      - name: Select Terraform Workspace
+        run: |
+          terraform workspace select $TF_WORKSPACE || terraform workspace new $TF_WORKSPACE
+
+      # 🔟 Terraform Plan (Uploads to TFC)
+      - name: Terraform Plan
+        run: terraform plan -var-file="$ENV_FILE" -out=tfplan
+
+      # 1️⃣1️⃣ Show Plan in JSON (Optional)
+      - name: Show Plan JSON
+        run: terraform show -json tfplan > tfplan.json
+
+      # 1️⃣2️⃣ Comment Plan in Pull Request (Optional)
+      - name: Comment Plan in PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: tfplan.json
