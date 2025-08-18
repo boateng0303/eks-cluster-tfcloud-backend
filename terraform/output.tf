@@ -31,7 +31,7 @@ output "eks_cluster_endpoint" {
 
 output "eks_cluster_certificate_authority" {
   description = "EKS cluster Certificate Authority data"
-  value       = module.eks.cluster_certificate_authority
+  value       = module.eks.cluster_certificate
 }
 
 output "eks_node_group_name" {
