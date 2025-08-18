@@ -80,16 +80,68 @@ jobs:
         run: terraform init 
 
     
-      # 🔟 Terraform Plan (Uploads to TFC)
-      - name: Terraform Plan
-        working-directory: terraform
-        run: terraform plan -var-file="$ENV_FILE" 
+      # # 🔟 Terraform Plan (Uploads to TFC)
+      # - name: Terraform Plan
+      #   working-directory: terraform
+      #   run: terraform plan -var-file="$ENV_FILE" 
 
       
 
-      # 1️⃣2️⃣ Comment Plan in Pull Request (Optional)
-      - name: Comment Plan in PR
-        if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          path: tfplan.json
+      - name: Trigger TFC Run
+        id: tfc_run
+        run: |
+              env_file="${{ github.event.inputs.env }}.tfvars"
+              payload=$(jq -n \
+                --arg message "Triggered by GitHub Actions" \
+                --arg workspace_id "YOUR_WORKSPACE_ID" \
+                --arg env_file "$env_file" \
+                '{
+                  "data": {
+                    "attributes": {
+                      "is-destroy": false,
+                      "message": $message,
+                      "variables": [
+                        { "key": "ENV_FILE", "value": $env_file, "category": "terraform" }
+                      ]
+                    },
+                    "type": "runs",
+                    "relationships": {
+                      "workspace": { "data": { "type": "workspaces", "id": $workspace_id } }
+                    }
+                  }
+                }')
+              
+              response=$(curl -s \
+                --header "Authorization: Bearer ${{ secrets.TFC_TOKEN }}" \
+                --header "Content-Type: application/vnd.api+json" \
+                --request POST \
+                --data "$payload" \
+                https://app.terraform.io/api/v2/runs)
+              
+              run_id=$(echo $response | jq -r '.data.id')
+              echo "Terraform Cloud Run ID: $run_id"
+              echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+
+
+      - name: Wait for Run Status
+        run: |
+          run_id=${{ steps.tfc_run.outputs.run_id }}
+          while true; do
+            status=$(curl -s \
+              --header "Authorization: Bearer ${{ secrets.TFC_TOKEN }}" \
+              https://app.terraform.io/api/v2/runs/$run_id | jq -r '.data.attributes.status')
+      
+            echo "Current status: $status"
+      
+            if [[ "$status" == "planned" ]]; then
+              echo "Plan ready — waiting for manual approval in TFC UI..."
+            elif [[ "$status" == "applied" ]]; then
+              echo "Apply finished successfully ✅"
+              break
+            elif [[ "$status" == "errored" || "$status" == "canceled" ]]; then
+              echo "Run failed ❌"
+              exit 1
+            fi
+            sleep 15
+          done
