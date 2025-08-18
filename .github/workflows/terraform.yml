@@ -75,11 +75,9 @@ jobs:
       # 🔟 Terraform Plan (Uploads to TFC)
       - name: Terraform Plan
         working-directory: terraform
-        run: terraform plan -var-file="$ENV_FILE" -out=tfplan
+        run: terraform plan -var-file="$ENV_FILE" 
 
-      # 1️⃣1️⃣ Show Plan in JSON (Optional)
-      - name: Show Plan JSON
-        run: terraform show -json tfplan > tfplan.json
+      
 
       # 1️⃣2️⃣ Comment Plan in Pull Request (Optional)
       - name: Comment Plan in PR
