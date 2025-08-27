@@ -5,7 +5,7 @@ terraform {
     organization = "sheva"
 
     workspaces {
-      name = "dev"  # Workspace per env + region
+      name = "devv"  # Workspace per env + region
     }
   }
 
