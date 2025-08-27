@@ -80,12 +80,38 @@ jobs:
         run: terraform init 
 
     
-      # 🔟 Terraform Plan (Uploads to TFC)
-      - name: Terraform Plan
-        working-directory: terraform
-        run: terraform plan -var-file="$ENV_FILE" 
+      # # 🔟 Terraform Plan (Uploads to TFC)
+      # - name: Terraform Plan
+      #   working-directory: terraform
+      #   run: terraform plan -var-file="$ENV_FILE" 
+
+     
+
+      - name: Trigger Run in TFC (Prod)
+        run: |
+          curl \
+            --header "Authorization: Bearer ${{ secrets.TFC_TOKEN}}" \
+            --header "Content-Type: application/vnd.api+json" \
+            --request POST \
+            --data '{
+              "data": {
+                "attributes": {
+                  "message": "Prod run from GitHub Actions",
+                  "plan-only": false
+                },
+                "type":"runs",
+                "relationships": {
+                  "workspace": {
+                    "data": {
+                      "type": "workspaces",
+                      "id": "ws-ULGfQcPz9mTF5FH7"   # <-- your prod workspace ID
+                    }
+                  }
+                }
+              }
+            }' \
+            https://app.terraform.io/api/v2/runs
+
 
       
-
-      
-          done
+        
